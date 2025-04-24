@@ -40,20 +40,24 @@ type bestDealType = {
 
 export type queryProducts = {
   asin: string;
-  delivery: string;
+  delivery?: string;
   product_original_price: string;
   product_price: string;
   product_photo: string;
-  product_star_rating: number;
-  product_num_ratings: number;
+  product_star_rating?: number;
+  product_num_ratings?: number;
   product_title: string;
-  product_url: string;
+  product_url?: string;
 };
 
 type queryDataType = {
   data: {
     products: [queryProducts];
   };
+};
+
+type cartItems = queryProducts & {
+  count: number;
 };
 
 type storeType = {
@@ -68,6 +72,10 @@ type storeType = {
   setQueryFilProducts: React.Dispatch<React.SetStateAction<queryProducts[]>>;
   bestFilProducts: Deal[];
   setBestFilProducts: React.Dispatch<React.SetStateAction<Deal[]>>;
+  reloadBestDeals: () => Promise<void>;
+  cart: cartItems[];
+  addToCart: (newItem: queryProducts) => void;
+  removeFromCart: (asin: string) => void;
 };
 
 export const Store = createContext<storeType>({
@@ -76,18 +84,24 @@ export const Store = createContext<storeType>({
   setSearchData: () => {},
   input: '',
   setInput: () => {},
-  queryFilProducts:[],
-  setQueryFilProducts:()=>{},
-  bestFilProducts:[],
-  setBestFilProducts:()=>{},
+  queryFilProducts: [],
+  setQueryFilProducts: () => {},
+  bestFilProducts: [],
+  setBestFilProducts: () => {},
+  reloadBestDeals: async () => {},
+  cart:[],
+  addToCart:()=>{},
+  removeFromCart:()=>{},
 });
 
 const StoreProvider = (props: Props) => {
   const [bestDeals, setBestDeals] = useState<bestDealType>();
   const [searchData, setSearchData] = useState<queryDataType>();
   const [input, setInput] = useState('');
-  const [bestFilProducts,setBestFilProducts] = useState<Deal[]>([]);
+  const [bestFilProducts, setBestFilProducts] = useState<Deal[]>([]);
   const [queryFilProducts, setQueryFilProducts] = useState<queryProducts[]>([]);
+  const [nullStorage, setNullStorage] = useState(false);
+  const [cart, setCart] = useState<cartItems[]>([]);
 
   const bestDealApi = async () => {
     const url =
@@ -101,14 +115,25 @@ const StoreProvider = (props: Props) => {
     };
 
     try {
-      const response = await fetch(url, options);
-      const result = await response.json();
-      setBestDeals(result);
-      await AsyncStorage.setItem('best-Deals',JSON.stringify(result));
-      console.log(result);
+      const value = await AsyncStorage.getItem('best-Deals');
+      if (value != null) {
+        setBestDeals(JSON.parse(value));
+        console.log('Storage:', JSON.parse(value));
+      } else {
+        const response = await fetch(url, options);
+        const result = await response.json();
+        setBestDeals(result);
+        await AsyncStorage.setItem('best-Deals', JSON.stringify(result));
+        console.log('Best Deals:', result);
+      }
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const reloadBestDeals = async () => {
+    await AsyncStorage.removeItem('best-Deals');
+    setNullStorage(!nullStorage);
   };
 
   const queryApi = async () => {
@@ -125,15 +150,49 @@ const StoreProvider = (props: Props) => {
       const response = await fetch(url, options);
       const result = await response.json();
       setSearchData(result);
-      console.log(result);
+      console.log('Search:', result);
     } catch (error) {
       console.error(error);
     }
   };
 
+  const addToCart = (newItem: queryProducts) => {
+    setCart(prevCart => {
+      const index = prevCart.findIndex(item => item.asin === newItem.asin);
+
+      if (index !== -1) {
+        const updatedCart = [...prevCart];
+        updatedCart[index].count += 1;
+        return updatedCart;
+      }
+
+      return [...prevCart, {...newItem, count: 1}];
+    });
+  };
+
+  const removeFromCart = (asin: string) => {
+    setCart(prevCart => {
+      const index = prevCart.findIndex(item => item.asin === asin);
+
+      if (index === -1) {
+        return prevCart;
+      }
+
+      const updatedCart = [...prevCart];
+
+      if (updatedCart[index].count > 1) {
+        updatedCart[index].count -= 1;
+      } else {
+        updatedCart.splice(index, 1);
+      }
+
+      return updatedCart;
+    });
+  };
+
   useEffect(() => {
     bestDealApi();
-  }, []);
+  }, [nullStorage]);
 
   useEffect(() => {
     if (input.length > 2) {
@@ -156,6 +215,10 @@ const StoreProvider = (props: Props) => {
     setQueryFilProducts,
     bestFilProducts,
     setBestFilProducts,
+    reloadBestDeals,
+    cart,
+    addToCart,
+    removeFromCart,
   };
 
   return <Store.Provider value={value}>{props.children}</Store.Provider>;

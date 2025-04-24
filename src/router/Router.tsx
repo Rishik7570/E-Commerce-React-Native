@@ -16,6 +16,7 @@ export type RootStackParamList = {
     starRating?:number,
     numRating?:number,
     delivery?:string,
+    url?:string,
   };
   Cart:undefined;
 };

@@ -13,13 +13,16 @@ import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from '../router/Router';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const {width} = Dimensions.get('window');
 const cardWidth = width / 2 - 24; // adjust spacing
 const itemsPerPage = 6;
 
 const BestDeal = () => {
-  const {bestDeals, bestFilProducts} = useContext(Store);
+
+  const {bestDeals, bestFilProducts,reloadBestDeals} = useContext(Store);
+
   const [allDeals, setAllDeals] = useState<Deal[]>([]);
   const [visibleDeals, setVisibleDeals] = useState<Deal[]>([]);
   const [page, setPage] = useState(1);
@@ -93,7 +96,12 @@ const BestDeal = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerTxt}>Our Best Deals</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTxt}>Our Best Deals</Text>
+        <TouchableOpacity style={styles.reload} onPress={()=>reloadBestDeals()}>
+          <Ionicons name="reload" size={25} />
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={visibleDeals}
         keyExtractor={item => item.deal_id}
@@ -117,10 +125,21 @@ const styles = StyleSheet.create({
   container: {
     padding: 12,
   },
+  header:{
+    display:'flex',
+    flexDirection:'row',
+    alignItems:'center',
+    justifyContent:'space-between',
+    marginBottom: 12,
+  },
   headerTxt: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 12,
+  },
+  reload:{
+    backgroundColor:'white',
+    borderRadius:20,
+    padding:5,
   },
   flatList: {
     paddingBottom: 20,
