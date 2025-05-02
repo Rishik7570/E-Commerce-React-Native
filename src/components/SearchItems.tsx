@@ -13,7 +13,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../router/Router';
 
 const SearchItems = () => {
-  const {searchData,queryFilProducts} = useContext(Store);
+  const {searchData,queryFilProducts,productDetailsAPI} = useContext(Store);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -26,17 +26,12 @@ const SearchItems = () => {
           style={styles.searchContainer}
           renderItem={({item}) => (
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('Product', {
-                  id: item.asin,
-                  name: item.product_title,
-                  photo: item.product_photo,
-                  price: item.product_price,
-                  original_price: item.product_original_price,
-                  starRating: item.product_star_rating,
-                  numRating: item.product_num_ratings,
-                  delivery: item.delivery,
-                })
+              onPress={() =>{
+                productDetailsAPI(item.asin);
+                setTimeout(()=>{
+                  navigation.navigate('Product');
+                },800);
+              }
               }
               style={styles.searchItems}>
               <Image

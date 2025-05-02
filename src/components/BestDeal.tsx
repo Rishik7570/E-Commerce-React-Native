@@ -21,7 +21,7 @@ const itemsPerPage = 6;
 
 const BestDeal = () => {
 
-  const {bestDeals, bestFilProducts,reloadBestDeals} = useContext(Store);
+  const {bestDeals, bestFilProducts,reloadBestDeals,productDetailsAPI} = useContext(Store);
 
   const [allDeals, setAllDeals] = useState<Deal[]>([]);
   const [visibleDeals, setVisibleDeals] = useState<Deal[]>([]);
@@ -66,14 +66,12 @@ const BestDeal = () => {
   const renderItem = ({item}: {item: Deal}) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() =>
-        navigation.navigate('Product', {
-          id: item.product_asin,
-          name: item.deal_title,
-          price: item.deal_price.currency + item.deal_price.amount,
-          original_price: item.list_price.currency + item.list_price.amount,
-          photo: item.deal_photo,
-        })
+      onPress={() => {
+        productDetailsAPI(item.product_asin);
+        setTimeout(()=>{
+          navigation.navigate('Product');
+        },800);
+      }
       }>
       <Image source={{uri: item.deal_photo}} style={styles.cardImg} />
       <Text style={styles.cardText} numberOfLines={2}>

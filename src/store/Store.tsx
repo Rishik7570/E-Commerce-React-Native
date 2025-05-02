@@ -56,7 +56,53 @@ type queryDataType = {
   };
 };
 
-type cartItems = queryProducts & {
+export type productDetailsType = {
+  data: {
+    asin: string;
+    product_title: string;
+    product_price: string;
+    currency: string;
+    product_star_rating: string;
+    product_num_ratings: string;
+    product_url: string;
+    product_photo: string;
+    product_photos: string[];
+    product_availability: string;
+    about_product: string[];
+    product_description: string;
+    product_information: {
+      'Product Dimensions': string;
+      'Item Weight': string;
+      ASIN: string;
+      'Item model number': string;
+      Batteries: string;
+      'Best Sellers Rank': string;
+      'Is Discontinued By Manufacturer': string;
+      OS: string;
+      RAM: string;
+      'Wireless communication technologies': string;
+      'Connectivity technologies': string;
+      GPS: string;
+      'Special features': string;
+      'Other display features': string;
+      'Human Interface Input': string;
+      'Scanner Resolution': string;
+      'Other camera features': string;
+      'Form Factor': string;
+      Color: string;
+      'Battery Power Rating': string;
+      'Whats in the box': string;
+      Manufacturer: string;
+      'Date First Available': string;
+      'Memory Storage Capacity': string;
+      'Standing screen display size': string;
+      'Ram Memory Installed Size': string;
+      Weight: string;
+    };
+  };
+};
+
+type cartItems = productDetailsType & {
   count: number;
 };
 
@@ -74,8 +120,13 @@ type storeType = {
   setBestFilProducts: React.Dispatch<React.SetStateAction<Deal[]>>;
   reloadBestDeals: () => Promise<void>;
   cart: cartItems[];
-  addToCart: (newItem: queryProducts) => void;
+  addToCart: (newItem: productDetailsType) => void;
   removeFromCart: (asin: string) => void;
+  product: productDetailsType | undefined;
+  setProduct: React.Dispatch<React.SetStateAction<productDetailsType | undefined>>;
+  productDetailsAPI: (asin: string) => Promise<void>;
+  incrementCount: (cartProduct: productDetailsType) => void;
+  decrementCount: (cartProduct: productDetailsType) => void;
 };
 
 export const Store = createContext<storeType>({
@@ -89,9 +140,14 @@ export const Store = createContext<storeType>({
   bestFilProducts: [],
   setBestFilProducts: () => {},
   reloadBestDeals: async () => {},
-  cart:[],
-  addToCart:()=>{},
-  removeFromCart:()=>{},
+  cart: [],
+  addToCart: () => {},
+  removeFromCart: () => {},
+  product:undefined,
+  setProduct:()=>{},
+  productDetailsAPI:async()=>{},
+  incrementCount:()=>{},
+  decrementCount:()=>{},
 });
 
 const StoreProvider = (props: Props) => {
@@ -102,6 +158,7 @@ const StoreProvider = (props: Props) => {
   const [queryFilProducts, setQueryFilProducts] = useState<queryProducts[]>([]);
   const [nullStorage, setNullStorage] = useState(false);
   const [cart, setCart] = useState<cartItems[]>([]);
+  const [product,setProduct] = useState<productDetailsType>();
 
   const bestDealApi = async () => {
     const url =
@@ -156,9 +213,30 @@ const StoreProvider = (props: Props) => {
     }
   };
 
-  const addToCart = (newItem: queryProducts) => {
+  const productDetailsAPI = async(asin: string) => {
+    const url =
+      `https://real-time-amazon-data.p.rapidapi.com/product-details?asin=${asin}&country=US`;
+    const options = {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': Config.API_KEY!,
+        'x-rapidapi-host': Config.API_HOST!,
+      },
+    };
+
+    try {
+        const response = await fetch(url, options);
+        const result = await response.json();
+        setProduct(result);
+        console.log('Product Details:', result);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const addToCart = (newItem: productDetailsType) => {
     setCart(prevCart => {
-      const index = prevCart.findIndex(item => item.asin === newItem.asin);
+      const index = prevCart.findIndex(item => item.data.asin === newItem.data.asin);
 
       if (index !== -1) {
         const updatedCart = [...prevCart];
@@ -172,7 +250,7 @@ const StoreProvider = (props: Props) => {
 
   const removeFromCart = (asin: string) => {
     setCart(prevCart => {
-      const index = prevCart.findIndex(item => item.asin === asin);
+      const index = prevCart.findIndex(item => item.data.asin === asin);
 
       if (index === -1) {
         return prevCart;
@@ -189,6 +267,28 @@ const StoreProvider = (props: Props) => {
       return updatedCart;
     });
   };
+
+  const incrementCount = (cartProduct: productDetailsType) => {
+    setCart(prev =>
+      prev.map(item =>
+        item.data.asin === cartProduct.data.asin
+          ? {...item, count: item.count + 1}
+          : item,
+      ),
+    );
+  };
+
+  const decrementCount = (cartProduct: productDetailsType) => {
+    setCart(prev =>
+      prev
+        .map(item =>
+          item.data.asin === cartProduct.data.asin
+            ? {...item, count: Math.max(1, item.count - 1)}
+            : item,
+        )
+    );
+  };
+
 
   useEffect(() => {
     bestDealApi();
@@ -219,6 +319,11 @@ const StoreProvider = (props: Props) => {
     cart,
     addToCart,
     removeFromCart,
+    product,
+    setProduct,
+    productDetailsAPI,
+    incrementCount,
+    decrementCount,
   };
 
   return <Store.Provider value={value}>{props.children}</Store.Provider>;

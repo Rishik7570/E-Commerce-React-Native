@@ -4,20 +4,11 @@ import SearchPage from '../screens/SearchPage';
 import ProductDetails from '../screens/ProductDetails';
 import Cart from '../screens/Cart';
 
+
 export type RootStackParamList = {
   Home: undefined;
   Search:undefined;
-  Product:{
-    id:string,
-    name:string,
-    price:string,
-    original_price:string,
-    photo:string,
-    starRating?:number,
-    numRating?:number,
-    delivery?:string,
-    url?:string,
-  };
+  Product:undefined;
   Cart:undefined;
 };
 
